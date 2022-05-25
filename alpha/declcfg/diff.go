@@ -1,9 +1,11 @@
 package declcfg
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"sync"
 
 	"github.com/blang/semver/v4"
@@ -187,11 +189,63 @@ func (g *DiffGenerator) Run(oldModel, newModel model.Model) (model.Model, error)
 		outputPkg.DefaultChannel, outputHasDefault = outputPkg.Channels[newPkg.DefaultChannel.Name]
 		if !outputHasDefault {
 			// Create a name-only channel since oldModel contains the channel already.
-			outputPkg.DefaultChannel = copyChannelNoBundles(newPkg.DefaultChannel, outputPkg)
+			//outputPkg.DefaultChannel = copyChannelNoBundles(newPkg.DefaultChannel, outputPkg)
+
+			// Set the defaultChannel using the priority of a channel when the default got filtered out
+			err := setDefaultChannel(outputPkg)
+
+			fmt.Println(err)
 		}
 	}
 
 	return outputModel, nil
+}
+
+type Pair struct {
+	Key   string
+	Value int
+}
+
+type PairList []Pair
+
+func (p PairList) Len() int           { return len(p) }
+func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+
+func setDefaultChannel(outputPkg *model.Package) error {
+
+	p := make(PairList, len(outputPkg.Channels))
+	i := 0
+	for _, channel := range outputPkg.Channels {
+		fmt.Println("current channel in filtered output ->", channel)
+		var channelPriority property.Channel
+		for _, pri := range channel.Properties {
+			json.Unmarshal(pri.Value, &channelPriority)
+			priInt, _ := strconv.Atoi(channelPriority.Priority)
+			p[i] = Pair{channelPriority.ChannelName, priInt}
+			i++
+		}
+
+	}
+	sort.Sort(p)
+
+	for _, k := range p {
+		fmt.Printf("%v\t%v\n", k.Key, k.Value)
+	}
+
+	fmt.Println("newly assigned default channel from existing channels by Priority is ", p[len(p)-1])
+
+	choosenChannelName := p[len(p)-1].Key
+
+	for chname, channel := range outputPkg.Channels {
+		if chname == choosenChannelName {
+			outputPkg.DefaultChannel = channel
+			return nil
+		}
+	}
+	//
+	return nil
+
 }
 
 // pruneOldFromNewPackage prune any bundles and channels from newPkg that
@@ -531,9 +585,10 @@ func copyPackage(in *model.Package) *model.Package {
 
 func copyChannelNoBundles(in *model.Channel, pkg *model.Package) *model.Channel {
 	cp := &model.Channel{
-		Name:    in.Name,
-		Package: pkg,
-		Bundles: make(map[string]*model.Bundle, len(in.Bundles)),
+		Name:       in.Name,
+		Package:    pkg,
+		Bundles:    make(map[string]*model.Bundle, len(in.Bundles)),
+		Properties: in.Properties,
 	}
 	return cp
 }
