@@ -192,6 +192,7 @@ func (g *DiffGenerator) Run(oldModel, newModel model.Model) (model.Model, error)
 			//outputPkg.DefaultChannel = copyChannelNoBundles(newPkg.DefaultChannel, outputPkg)
 
 			// Set the defaultChannel using the priority of a channel when the default got filtered out
+			// If no channels with priority property, fall back to a lexigraphical sort by channelName
 			setDefaultChannel(outputPkg)
 
 		}
@@ -227,21 +228,48 @@ func setDefaultChannel(outputPkg *model.Package) {
 
 	}
 
-	sort.Sort(p)
+	if i > 0 {
+		sort.Sort(p)
 
-	fmt.Println("choices sorted by priority:")
-	for _, k := range p {
-		fmt.Printf("%v\t%v\n", k.Key, k.Value)
-	}
-
-	choosenChannelName := p[len(p)-1].Key
-	fmt.Println("newly assigned default channel from existing channels by Priority is ", choosenChannelName)
-
-	for chname, channel := range outputPkg.Channels {
-		if chname == choosenChannelName {
-			outputPkg.DefaultChannel = channel
-			break
+		fmt.Println("defaultChannel choices sorted by priority:")
+		for _, k := range p {
+			fmt.Printf("%v\t%v\n", k.Key, k.Value)
 		}
+
+		choosenChannelName := p[len(p)-1].Key
+		for chname, channel := range outputPkg.Channels {
+			if chname == choosenChannelName {
+				outputPkg.DefaultChannel = channel
+				fmt.Println("newly assigned default channel from existing channels by Priority is ", choosenChannelName)
+				break
+			}
+		}
+	} else {
+		fmt.Println("No remaining channels in filtered output have the priority property, use lexigraphical sort to choose")
+
+		var channelNameArray []string
+		for _, channel := range outputPkg.Channels {
+			channelNameArray = append(channelNameArray, channel.Name)
+		}
+
+		sort.Slice(channelNameArray, func(i, j int) bool {
+			return channelNameArray[i] < channelNameArray[j]
+		})
+
+		fmt.Println("defaultChannel choices sorted by name:")
+		for _, k := range channelNameArray {
+			fmt.Printf("%s\n", k)
+		}
+
+		choosenChannelName := channelNameArray[len(channelNameArray)-1]
+		for chname, channel := range outputPkg.Channels {
+			if chname == choosenChannelName {
+				outputPkg.DefaultChannel = channel
+				fmt.Println("newly assigned default channel from existing channels by NAME is ", choosenChannelName)
+				break
+			}
+		}
+
 	}
 }
 
