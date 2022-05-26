@@ -2,6 +2,8 @@ package declcfg
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -3577,6 +3579,116 @@ func TestSetDefaultChannelRange(t *testing.T) {
 			//require.NoError(t, err)
 
 			newModel, err := ConvertToModel(s.newCfg)
+			require.NoError(t, err)
+
+			outputModel, err := s.g.Run(model.Model{}, newModel)
+			s.assertion(t, err)
+
+			if err := outputModel.Validate(); err != nil {
+				fmt.Println(err)
+				//return nil, err
+			}
+
+			outputCfg := ConvertFromModel(outputModel)
+			fmt.Println(outputCfg)
+			//require.EqualValues(t, s.expCfg, outputCfg)
+		})
+	}
+}
+
+func TestSetDefaultChannelRange2(t *testing.T) {
+	type spec struct {
+		name   string
+		g      *DiffGenerator
+		fsys   fs.FS
+		oldCfg DeclarativeConfig
+		//newCfg    DeclarativeConfig
+		expCfg    DeclarativeConfig
+		assertion require.ErrorAssertionFunc
+	}
+
+	specs := []spec{
+		{
+			name:   "ibm-mq-test/Valid",
+			oldCfg: DeclarativeConfig{},
+			fsys:   os.DirFS("./testdata/"),
+			//inputFBC: "./testdata/index.json",
+			g: &DiffGenerator{
+				IncludeAdditively: false,
+				HeadsOnly:         false,
+				SkipDependencies:  true,
+				Includer: DiffIncluder{
+					Packages: []DiffIncludePackage{
+						{
+							//HeadsOnly: false,
+
+							Name:  "ibm-mq",
+							Range: semver.MustParseRange("<=1.7.0"),
+							//Channels: []DiffIncludeChannel{
+							//	//	{
+							//	//		Name:  "v1.7",
+							//	//		Range: semver.MustParseRange("<=1.7.0"),
+							//	//	},
+							//	{
+							//		Name:  "v1.6",
+							//		Range: semver.MustParseRange("<=1.6.0"),
+							//	},
+							//},
+						},
+					},
+				},
+			},
+			expCfg: DeclarativeConfig{
+				Packages: []Package{
+					{Schema: schemaPackage, Name: "ibm-mq", DefaultChannel: "v1.8"},
+				},
+				Channels: []Channel{
+					{Schema: schemaChannel, Name: "v1.7", Package: "ibm-mq", Entries: []ChannelEntry{
+						{Name: "ibm-mq.v1.7.0"},
+					}},
+					{Schema: schemaChannel, Name: "v1.6", Package: "ibm-mq", Entries: []ChannelEntry{
+						{Name: "ibm-mq.v1.6.0"},
+					}},
+				},
+				Bundles: []Bundle{
+					{
+						Schema:  schemaBundle,
+						Name:    "ibm-mq.v1.6.0",
+						Package: "ibm-mq",
+						Image:   "reg/ibm-mq:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("ibm-mq", "1.6.0"),
+						},
+					},
+					{
+						Schema:  schemaBundle,
+						Name:    "ibm-mq.v1.7.0",
+						Package: "ibm-mq",
+						Image:   "reg/ibm-mq:latest",
+						Properties: []property.Property{
+							property.MustBuildPackage("ibm-mq", "1.7.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, s := range specs {
+		t.Run(s.name, func(t *testing.T) {
+			if s.assertion == nil {
+				s.assertion = require.NoError
+			}
+
+			//oldModel, err := ConvertToModel(s.oldCfg)
+			//require.NoError(t, err)
+
+			newCfg, err := LoadFS(s.fsys)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			newModel, err := ConvertToModel(*newCfg)
 			require.NoError(t, err)
 
 			outputModel, err := s.g.Run(model.Model{}, newModel)

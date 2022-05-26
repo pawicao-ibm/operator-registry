@@ -192,60 +192,57 @@ func (g *DiffGenerator) Run(oldModel, newModel model.Model) (model.Model, error)
 			//outputPkg.DefaultChannel = copyChannelNoBundles(newPkg.DefaultChannel, outputPkg)
 
 			// Set the defaultChannel using the priority of a channel when the default got filtered out
-			err := setDefaultChannel(outputPkg)
+			setDefaultChannel(outputPkg)
 
-			fmt.Println(err)
 		}
 	}
 
 	return outputModel, nil
 }
 
-type Pair struct {
+// gorp to sort channel property
+type ChannelPriorityProp struct {
 	Key   string
 	Value int
 }
 
-type PairList []Pair
+type ChannelPriorityPropList []ChannelPriorityProp
 
-func (p PairList) Len() int           { return len(p) }
-func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+func (p ChannelPriorityPropList) Len() int           { return len(p) }
+func (p ChannelPriorityPropList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p ChannelPriorityPropList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 
-func setDefaultChannel(outputPkg *model.Package) error {
+func setDefaultChannel(outputPkg *model.Package) {
 
-	p := make(PairList, len(outputPkg.Channels))
+	p := make(ChannelPriorityPropList, len(outputPkg.Channels))
 	i := 0
 	for _, channel := range outputPkg.Channels {
-		fmt.Println("current channel in filtered output ->", channel)
 		var channelPriority property.Channel
 		for _, pri := range channel.Properties {
 			json.Unmarshal(pri.Value, &channelPriority)
 			priInt, _ := strconv.Atoi(channelPriority.Priority)
-			p[i] = Pair{channelPriority.ChannelName, priInt}
+			p[i] = ChannelPriorityProp{channelPriority.ChannelName, priInt}
 			i++
 		}
 
 	}
+
 	sort.Sort(p)
 
+	fmt.Println("choices sorted by priority:")
 	for _, k := range p {
 		fmt.Printf("%v\t%v\n", k.Key, k.Value)
 	}
 
-	fmt.Println("newly assigned default channel from existing channels by Priority is ", p[len(p)-1])
-
 	choosenChannelName := p[len(p)-1].Key
+	fmt.Println("newly assigned default channel from existing channels by Priority is ", choosenChannelName)
 
 	for chname, channel := range outputPkg.Channels {
 		if chname == choosenChannelName {
 			outputPkg.DefaultChannel = channel
-			return nil
+			break
 		}
 	}
-	//
-	return nil
-
 }
 
 // pruneOldFromNewPackage prune any bundles and channels from newPkg that
