@@ -231,7 +231,7 @@ func setDefaultChannel(outputPkg *model.Package) {
 	if i > 0 {
 		sort.Sort(p)
 
-		fmt.Println("defaultChannel choices sorted by priority:")
+		fmt.Println("defaultChannel choices sorted by priority for package: ", outputPkg.Name)
 		for _, k := range p {
 			fmt.Printf("%v\t%v\n", k.Key, k.Value)
 		}
@@ -245,7 +245,7 @@ func setDefaultChannel(outputPkg *model.Package) {
 			}
 		}
 	} else {
-		fmt.Println("No remaining channels in filtered output have the priority property, use lexigraphical sort to choose")
+		fmt.Println("No remaining channels in filtered output have the priority property, use lexigraphical sort to choose for package: ", outputPkg.Name)
 
 		var channelNameArray []string
 		for _, channel := range outputPkg.Channels {
