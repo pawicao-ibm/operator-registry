@@ -41,7 +41,8 @@ type Package struct {
 
 type Channel struct {
 	ChannelName string `json:"channelName"`
-	Priority    string `json:"priority"`
+	//Priority    string `json:"priority"`
+	Priority int `json:"priority"`
 }
 
 type PackageRequired struct {
@@ -278,6 +279,6 @@ func MustBuildBundleObjectRef(ref string) Property {
 func MustBuildBundleObjectData(data []byte) Property {
 	return MustBuild(&BundleObject{File: File{data: data}})
 }
-func MustBuildChannelPriority(name string, priority string) Property {
+func MustBuildChannelPriority(name string, priority int) Property {
 	return MustBuild(&Channel{ChannelName: name, Priority: priority})
 }

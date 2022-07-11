@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strconv"
 	"sync"
 
 	"github.com/blang/semver/v4"
@@ -201,17 +200,7 @@ func (g *DiffGenerator) Run(oldModel, newModel model.Model) (model.Model, error)
 	return outputModel, nil
 }
 
-// gorp to sort channel property
-type ChannelPriorityProp struct {
-	Key   string
-	Value int
-}
-
-type ChannelPriorityPropList []ChannelPriorityProp
-
-func (p ChannelPriorityPropList) Len() int           { return len(p) }
-func (p ChannelPriorityPropList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-func (p ChannelPriorityPropList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+type ChannelPriorityPropList []property.Channel
 
 func setDefaultChannel(outputPkg *model.Package) {
 
@@ -219,24 +208,26 @@ func setDefaultChannel(outputPkg *model.Package) {
 	i := 0
 	for _, channel := range outputPkg.Channels {
 		var channelPriority property.Channel
-		for _, pri := range channel.Properties {
-			json.Unmarshal(pri.Value, &channelPriority)
-			priInt, _ := strconv.Atoi(channelPriority.Priority)
-			p[i] = ChannelPriorityProp{channelPriority.ChannelName, priInt}
-			i++
+		for _, prop := range channel.Properties {
+			if prop.Type == "olm.channel" {
+				json.Unmarshal(prop.Value, &channelPriority)
+				p[i] = channelPriority
+				i++
+			}
 		}
 
 	}
 
 	if i > 0 {
-		sort.Sort(p)
+		sort.Slice(p, func(j, k int) bool { return p[j].Priority < p[k].Priority })
 
 		fmt.Println("defaultChannel choices sorted by priority for package: ", outputPkg.Name)
 		for _, k := range p {
-			fmt.Printf("%v\t%v\n", k.Key, k.Value)
+			fmt.Printf("%v\t%v\n", k.ChannelName, k.Priority)
 		}
 
-		choosenChannelName := p[len(p)-1].Key
+		// pick last channel as it is the one with the highest priority
+		choosenChannelName := p[len(p)-1].ChannelName
 		for chname, channel := range outputPkg.Channels {
 			if chname == choosenChannelName {
 				outputPkg.DefaultChannel = channel

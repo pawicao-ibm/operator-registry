@@ -3461,21 +3461,21 @@ func TestSetDefaultChannelRange(t *testing.T) {
 					{Schema: schemaChannel, Name: "v1.8", Package: "ibm-mq", Entries: []ChannelEntry{
 						{Name: "ibm-mq.v1.8.1"}},
 						Properties: []property.Property{
-							property.MustBuildChannelPriority("v1.8", "3"),
+							property.MustBuildChannelPriority("v1.8", 3),
 						},
 					},
 
 					{Schema: schemaChannel, Name: "v1.7", Package: "ibm-mq", Entries: []ChannelEntry{
 						{Name: "ibm-mq.v1.7.0"}},
 						Properties: []property.Property{
-							property.MustBuildChannelPriority("v1.7", "1"),
+							property.MustBuildChannelPriority("v1.7", 1),
 						},
 					},
 
 					{Schema: schemaChannel, Name: "v1.6", Package: "ibm-mq", Entries: []ChannelEntry{
 						{Name: "ibm-mq.v1.6.0"}},
 						Properties: []property.Property{
-							property.MustBuildChannelPriority("v1.6", "2"),
+							property.MustBuildChannelPriority("v1.6", 2),
 						},
 					},
 				},
@@ -3535,15 +3535,22 @@ func TestSetDefaultChannelRange(t *testing.T) {
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
-					{Schema: schemaPackage, Name: "ibm-mq", DefaultChannel: "v1.8"},
+					{Schema: schemaPackage, Name: "ibm-mq", DefaultChannel: "v1.6"},
 				},
 				Channels: []Channel{
-					{Schema: schemaChannel, Name: "v1.7", Package: "ibm-mq", Entries: []ChannelEntry{
-						{Name: "ibm-mq.v1.7.0"},
-					}},
+
 					{Schema: schemaChannel, Name: "v1.6", Package: "ibm-mq", Entries: []ChannelEntry{
-						{Name: "ibm-mq.v1.6.0"},
-					}},
+						{Name: "ibm-mq.v1.6.0"}},
+						Properties: []property.Property{
+							property.MustBuildChannelPriority("v1.6", 2),
+						},
+					},
+					{Schema: schemaChannel, Name: "v1.7", Package: "ibm-mq", Entries: []ChannelEntry{
+						{Name: "ibm-mq.v1.7.0"}},
+						Properties: []property.Property{
+							property.MustBuildChannelPriority("v1.7", 1),
+						},
+					},
 				},
 				Bundles: []Bundle{
 					{
@@ -3564,8 +3571,7 @@ func TestSetDefaultChannelRange(t *testing.T) {
 							property.MustBuildPackage("ibm-mq", "1.7.0"),
 						},
 					},
-				},
-			},
+				}},
 		},
 	}
 
@@ -3591,7 +3597,7 @@ func TestSetDefaultChannelRange(t *testing.T) {
 
 			outputCfg := ConvertFromModel(outputModel)
 			fmt.Println(outputCfg)
-			//require.EqualValues(t, s.expCfg, outputCfg)
+			require.EqualValues(t, s.expCfg, outputCfg)
 		})
 	}
 }
@@ -3640,15 +3646,21 @@ func TestSetDefaultChannelRange2(t *testing.T) {
 			},
 			expCfg: DeclarativeConfig{
 				Packages: []Package{
-					{Schema: schemaPackage, Name: "ibm-mq", DefaultChannel: "v1.8"},
+					{Schema: schemaPackage, Name: "ibm-mq", DefaultChannel: "v1.7"},
 				},
 				Channels: []Channel{
-					{Schema: schemaChannel, Name: "v1.7", Package: "ibm-mq", Entries: []ChannelEntry{
-						{Name: "ibm-mq.v1.7.0"},
-					}},
 					{Schema: schemaChannel, Name: "v1.6", Package: "ibm-mq", Entries: []ChannelEntry{
-						{Name: "ibm-mq.v1.6.0"},
-					}},
+						{Name: "ibm-mq.v1.6.0"}},
+						Properties: []property.Property{
+							property.MustBuildChannelPriority("v1.6", 2),
+						},
+					},
+					{Schema: schemaChannel, Name: "v1.7", Package: "ibm-mq", Entries: []ChannelEntry{
+						{Name: "ibm-mq.v1.7.0"}},
+						Properties: []property.Property{
+							property.MustBuildChannelPriority("v1.7", 3),
+						},
+					},
 				},
 				Bundles: []Bundle{
 					{
@@ -3701,7 +3713,7 @@ func TestSetDefaultChannelRange2(t *testing.T) {
 
 			outputCfg := ConvertFromModel(outputModel)
 			fmt.Println(outputCfg)
-			//require.EqualValues(t, s.expCfg, outputCfg)
+			require.EqualValues(t, s.expCfg, outputCfg)
 		})
 	}
 }
@@ -3729,7 +3741,7 @@ func TestSetDefaultChannelByName(t *testing.T) {
 					{Schema: schemaChannel, Name: "v1.8", Package: "ibm-mq", Entries: []ChannelEntry{
 						{Name: "ibm-mq.v1.8.1"}},
 						Properties: []property.Property{
-							property.MustBuildChannelPriority("v1.8", "3"),
+							property.MustBuildChannelPriority("v1.8", 3),
 						},
 					},
 

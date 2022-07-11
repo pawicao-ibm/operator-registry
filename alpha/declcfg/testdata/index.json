@@ -18,7 +18,7 @@
             "type": "olm.channel",
             "value": {
                 "channelName": "v1.6",
-                "priority": "2"
+                "priority": 2
             }
         }
     ]
@@ -38,7 +38,7 @@
             "type": "olm.channel",
             "value": {
                 "channelName": "v1.7",
-                "priority": "3"
+                "priority": 3
             }
         }
     ]
